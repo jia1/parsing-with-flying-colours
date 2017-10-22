@@ -43,7 +43,9 @@ as follows:
     use higher-order functions (from the Haskell libraries), where possible.
 -}
 
--- import Data.List.Split
+module SParsec where
+
+import Text.Parsec
 import Text.ParserCombinators.Parsec
 
 main = do
@@ -99,16 +101,35 @@ print_statistics :: [String] -> IO ()
 print_statistics ll =
     foldr (\ a m -> putStrLn a >> m) (return ()) ll
 
-answer :: Parser Char
-answer = do
-    a <- oneOf "ABCDE"
-    return a
+type SParsec = Parsec String ()
 
-parse_answers :: Parser String
-parse_answers = do
-    answers <- many answer
-    return answers
+answer :: SParsec Char
+answer = oneOf "ABCDE"
+
+line :: SParsec (String, String)
+line = do
+        skipMany space
+        first <- char 'A'
+        number <- many digit
+        last <- upper
+        skipMany (char ',')
+        skipMany digit
+        skipMany (char ',')
+        answerString <- many (oneOf "ABCDEF,")
+        return ([first] ++ number ++ [last], show answerString)
+
+parseLine :: String -> String
+parseLine a =
+    case (parse line "" a) of
+    Left err -> show err
+    Right (student, answers) -> show student
+
+parseAnswers :: String -> String
+parseAnswers a =
+    case (parse answer "" a) of
+    Left err -> show err
+    Right xs -> show xs
 
 compute_score :: String -> String
-compute_score a = error "To be implemented"
+compute_score a = parseLine a
 
