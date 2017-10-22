@@ -39,10 +39,11 @@ as follows:
 
     Complete the rest of your options and submit lab03.hs by the deadline.
     For the rest of the options, you are to use parsec to parse the
-    csv (comma seperated value) format of each line. Please remember to
+    csv (comma separated value) format of each line. Please remember to
     use higher-order functions (from the Haskell libraries), where possible.
 -}
 
+-- import Data.List.Split
 import Text.ParserCombinators.Parsec
 
 main = do
@@ -73,16 +74,41 @@ grade_quiz x ll =
     then print_file ll
     else
         if (x=="1")
-        then print_file ll
+        then sort_by_student ll
         else
             if (x=="2")
-            then print_file ll
+            then sort_by_marks ll
             else
                 if (x=="3")
-                then print_file ll
+                then print_statistics ll
                 else putStrLn "Invalid option"
 
 print_file :: [String] -> IO ()
 print_file ll =
     foldr (\ a m -> putStrLn a >> m) (return ()) ll
+
+sort_by_student :: [String] -> IO ()
+sort_by_student ll =
+    foldr (\ a m -> putStrLn (compute_score a) >> m) (return ()) ll
+
+sort_by_marks :: [String] -> IO ()
+sort_by_marks ll =
+    foldr (\ a m -> putStrLn a >> m) (return ()) ll
+
+print_statistics :: [String] -> IO ()
+print_statistics ll =
+    foldr (\ a m -> putStrLn a >> m) (return ()) ll
+
+answer :: Parser Char
+answer = do
+    a <- oneOf "ABCDE"
+    return a
+
+parse_answers :: Parser String
+parse_answers = do
+    answers <- many answer
+    return answers
+
+compute_score :: String -> String
+compute_score a = error "To be implemented"
 
