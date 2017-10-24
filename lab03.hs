@@ -181,5 +181,5 @@ sortByScore :: [(String, Int)] -> [(String, Int)]
 sortByScore xs = sortBy (flip compare `on` snd) xs
 
 joinPair :: (String, Int) -> String
-joinPair p = (fst p) ++ show (snd p)
+joinPair p = (fst p) ++ "," ++ show (snd p)
 
