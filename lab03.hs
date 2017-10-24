@@ -45,6 +45,8 @@ as follows:
 
 module SParsec where
 
+import Data.Function
+import Data.List
 import Text.Parsec
 import Text.ParserCombinators.Parsec.Language
 import qualified Text.ParserCombinators.Parsec.Token as Token
@@ -92,10 +94,12 @@ print_file ll =
 
 sort_by_student :: [String] -> IO ()
 sort_by_student ll =
-    let answerKey = getAnswers (head ll)
-        sortedByStudent = sortByStudent . map parseAndCountScore (tail ll)
+    let answerKey = parseAnswers (head ll)
+        in
+        let parseCountMatchAns = parseCountMatch answerKey
+            sortedByStudent = sortByStudent . map parseCountMatchAns (tail ll)
     in
-    foldr (\ a m -> putStrLn a >> m) (return ()) sortedByStudent
+    foldr (\ a m -> putStrLn a >> m) (return ()) . map joinPair finalSortedList
 
 sort_by_marks :: [String] -> IO ()
 sort_by_marks ll =
@@ -105,12 +109,9 @@ print_statistics :: [String] -> IO ()
 print_statistics ll =
     foldr (\ a m -> putStrLn a >> m) (return ()) ll
 
-data Student = String
-data Answers = Char | [Char]
-
 type SParsec = Parsec String ()
 
-student :: SParsec Student
+student :: SParsec String
 student = do
         skipMany space
         first <- char 'A'
@@ -119,36 +120,41 @@ student = do
         skipMany (char ',')
         skipMany digit
         skipMany (char ',')
-        return ([first] ++ number ++ [last])
+        return (show ([first] ++ number ++ [last]))
 
-answers :: SParsec Answer
+answers :: SParsec [Char]
 answers = do
-        skipMany (char ',')
-        answerList <- chainl (oneOf "ABCDE") joinOp
+        -- skipMany (char ',')
+        -- answerList <- chainl (oneOf "ABCDE") joinOp
+        -- return answerList
+        answerList <- Token.commaSep (oneOf "ABCDE")
+        return answerList
 
-joinOp :: SParsec (Answers -> Answers -> Answers)
+{-
+joinOp :: SParsec (Char -> Char -> [Char])
 joinOp = do
         char ','
-        return eAppend
+        return eJoin
 
 eJoin x y = case x of
             Char x -> case y of
                       Char y -> [x:[y]]
-                      [Char] y -> [x:y]
-            [Char] x -> case y of
-                        Char y -> x ++ [y]
-                        [Char] y -> x ++ y
+                      y -> [x:y]
+            x -> case y of
+                 Char y -> [x:y]
+                 y -> x ++ y
+-}
 
 parseLine :: String -> (String, [Char])
-parseLine a =
-    let student = case (parse student "" a) of
-                  Left err -> show err
-                  Right stu -> show stu
-        answers = case (parse answers "" a) of
-                  Left err -> show err
-                  Right ans -> show ans
+parseLine line =
+    let s = case (parse student "" a) of
+            Left err -> show err
+            Right stu -> show stu
+        a = case (parse answers "" a) of
+            Left err -> show err
+            Right ans -> show ans
     in
-    (student, answers)
+    (s, a)
 
 countMatch :: [Char] -> [Char] -> Int
 countMatch xs [] = 0
@@ -158,15 +164,24 @@ countMatch xs ys =
     then 1 + countMatch (tail xs) (tail ys)
     else countMatch (tail xs) (tail ys)
 
-parseAndCountScore :: String -> [Char] -> (String, Int)
-parseAndCountScore a answerKey =
+parseCountMatch :: String -> [Char] -> (String, Int)
+parseCountMatch answerKey a =
     let pair = parseLine a
     in
-    (fst pair, counMatch (snd pair) answerKey)
+    (fst pair, countMatch (snd pair) answerKey)
+
+parseAnswers :: String -> [Char]
+parseAnswers a =
+    case (parse answers "" a) of
+    Left err -> show err
+    Right ans -> show ans
 
 sortByStudent :: [(String, Int)] -> [(String, Int)]
-sortByStudent xs = sort xs
+sortByStudent xs = sortBy (compare `on` fst)  xs
 
 sortByScore :: [(String, Int)] -> [(String, Int)]
-sortByScore xs = sortBy (compare `on` snd) xs
+sortByScore xs = sortBy (flip compare `on` snd) xs
+
+joinPair :: (String, Int) -> String
+joinPair p = (fst p) ++ show (snd p)
 
