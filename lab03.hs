@@ -97,9 +97,9 @@ sort_by_student ll =
     let answerKey = parseAnswers (head ll)
         in
         let parseCountMatchAns = parseCountMatch answerKey
-            sortedByStudent = sortByStudent . map parseCountMatchAns (tail ll)
+            finalSortedList = sortByStudent (map parseCountMatchAns (tail ll))
     in
-    foldr (\ a m -> putStrLn a >> m) (return ()) . map joinPair finalSortedList
+    foldr (\ a m -> putStrLn a >> m) (return ()) (map joinPair finalSortedList)
 
 sort_by_marks :: [String] -> IO ()
 sort_by_marks ll =
@@ -112,38 +112,36 @@ print_statistics ll =
 type SParsec = Parsec String ()
 
 student :: SParsec String
-student = do
-        skipMany space
-        first <- char 'A'
+student = lexeme $ do
+        a <- char 'A'
         number <- many digit
-        last <- upper
-        skipMany (char ',')
-        skipMany digit
-        skipMany (char ',')
-        return (show ([first] ++ number ++ [last]))
+        checksum <- upper
+        skip (many anyChar)
+        return . [a:(String $ number:checksum)]
 
 answers :: SParsec [Char]
-answers = do
-        -- skipMany (char ',')
-        -- answerList <- chainl (oneOf "ABCDE") joinOp
-        -- return answerList
-        answerList <- Token.commaSep (oneOf "ABCDE")
+answers = lexeme $ do
+        a <- char 'A'
+        b <- many digits
+        c <- upper
+        d <- many (noneOf "ABCDE")
+        answerList <- chainl (oneOf "ABCDE") joinOp
         return answerList
 
-{-
+-- answers = Token.commaSep upper
+
 joinOp :: SParsec (Char -> Char -> [Char])
 joinOp = do
         char ','
         return eJoin
 
 eJoin x y = case x of
-            Char x -> case y of
-                      Char y -> [x:[y]]
+            char x -> case y of
+                      char y -> [x:[y]]
                       y -> [x:y]
             x -> case y of
-                 Char y -> [x:y]
+                 char y -> [x:y]
                  y -> x ++ y
--}
 
 parseLine :: String -> (String, [Char])
 parseLine line =
