@@ -140,7 +140,7 @@ sortByMarks :: [(String, Int)] -> [(String, Int)]
 sortByMarks xs = sortBy (flip compare `on` snd) xs
 
 joinPair :: (String, Int) -> String
-joinPair p = (fst p) ++ " " ++ show (toInteger (snd p))
+joinPair p = (fst p) ++ ", " ++ show (toInteger (snd p))
 
 getMedian :: [Int] -> Int -> String
 getMedian xs n =
@@ -199,17 +199,19 @@ sort_by_student :: [String] -> IO ()
 sort_by_student ll =
     let answerKey = parseAns (head ll)
         parseAndMatch = parseAndCount answerKey
-        finalSortedList = sortByStudent (map parseAndMatch (tail ll))
+        finalSortedList = map joinPair (sortByStudent (map parseAndMatch (tail ll)))
+        finalPrintList = ["          " ++ answerKey ++ ","] ++ finalSortedList
     in
-    foldr (\ a m -> putStrLn a >> m) (return ()) (map joinPair finalSortedList)
+    foldr (\ a m -> putStrLn a >> m) (return ()) finalPrintList
 
 sort_by_marks :: [String] -> IO ()
 sort_by_marks ll =
     let answerKey = parseAns (head ll)
         parseAndMatch = parseAndCount answerKey
-        finalSortedList = sortByMarks (map parseAndMatch (tail ll))
+        finalSortedList = map joinPair (sortByMarks (map parseAndMatch (tail ll)))
+        finalPrintList = ["          " ++ answerKey ++ ","] ++ finalSortedList
     in
-    foldr (\ a m -> putStrLn a >> m) (return ()) (map joinPair finalSortedList)
+    foldr (\ a m -> putStrLn a >> m) (return ()) finalPrintList
 
 print_statistics :: [String] -> IO ()
 print_statistics ll =
