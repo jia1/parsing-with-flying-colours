@@ -64,10 +64,10 @@ trim ln =
     in
     trimmedLn
 
-joinStuAns :: String -> [Char] -> String
+joinStuAns :: String -> String -> String
 joinStuAns stu ans = stu ++ " " ++ ans
 
-line :: SParsec (String, [Char])
+line :: SParsec (String, String)
 line = do
         spaces
         matricNumber <- many alphaNum
@@ -77,7 +77,7 @@ line = do
         answers <- many anyChar
         return (joinStuAns matricNumber (trim answers), trim answers)
 
-ans :: SParsec [Char]
+ans :: SParsec String
 ans = do
         spaces
         skipMany (char ',')
@@ -86,7 +86,7 @@ ans = do
         answers <- many anyChar
         return (trim answers)
 
-parseLine :: String -> (String, [Char])
+parseLine :: String -> (String, String)
 parseLine ln =
     let parsed = case (parse line "" ln) of
                  Left err -> (show err, [])
@@ -101,7 +101,7 @@ parseLine ln =
     in
     (joinStuAns student answers, answers)
 -}
-parseAns :: String -> [Char]
+parseAns :: String -> String
 parseAns ln =
     let parsed = case (parse ans "" ln) of
                  Left err -> []
@@ -116,7 +116,7 @@ parseAns ln =
     in
     answers
 -}
-countMatch :: [Char] -> [Char] -> Int
+countMatch :: String -> String -> Int
 countMatch xs [] = 0
 countMatch [] ys = 0
 countMatch xs ys =
@@ -127,7 +127,7 @@ countMatch xs ys =
     then 2 + countMatch (tail xs) (tail ys)
     else countMatch (tail xs) (tail ys)
 
-parseAndCount :: String -> [Char] -> (String, Int)
+parseAndCount :: String -> String -> (String, Int)
 parseAndCount answerKey ln =
     let pair = parseLine ln
     in
@@ -175,7 +175,7 @@ read_file x =
         in do
             return llcontent
 
-grade_quiz :: [Char] -> [String] -> IO ()
+grade_quiz :: String -> [String] -> IO ()
 grade_quiz x ll =
     do
     if (x=="0")
