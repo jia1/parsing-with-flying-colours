@@ -58,6 +58,12 @@ lexer  = P.makeTokenParser haskellDef
 comma  = P.commaSep lexer
 lexeme = P.lexeme   lexer
 
+trim :: String -> String
+trim ln =
+    let trimmedLn = T.unpack (T.dropAround (\ c -> isSpace c || isPunctuation c) (T.pack ln))
+    in
+    trimmedLn
+
 joinStuAns :: String -> [Char] -> String
 joinStuAns stu ans = stu ++ " " ++ ans
 
@@ -68,27 +74,40 @@ line = do
         skipMany (char ',')
         skipMany digit
         skipMany (char ',')
-        answers <- comma (upper <|> char '*' <|> char ',')
+        answers <- many anyChar
+        return (joinStuAns matricNumber (trim answers), trim answers)
+
+ans :: SParsec [Char]
+ans = do
+        spaces
         skipMany (char ',')
-        return (joinStuAns matricNumber answers, answers)
+        skipMany digit
+        skipMany (char ',')
+        answers <- many anyChar
+        return (trim answers)
 
 parseLine :: String -> (String, [Char])
-{-
 parseLine ln =
     let parsed = case (parse line "" ln) of
                  Left err -> (show err, [])
-                 Right (s, cs) -> (show s, cs)
+                 Right (s, cs) -> (s, cs)
     in parsed
--}
+{-
 parseLine ln =
-    let trimmedLn = T.dropAround (\ c -> isSpace c || isPunctuation c) (T.pack ln)
-        splitLn = splitOn "," (T.unpack trimmedLn)
+    let trimmedLn = trim ln
+        splitLn = splitOn "," trimmedLn
         student = head splitLn
-        answers = intercalate "," (tail (tail splitLn))
+        answers = intercalate "," (tail (tail splitLn)) -- Remove the fake score
     in
     (joinStuAns student answers, answers)
-
+-}
 parseAns :: String -> [Char]
+parseAns ln =
+    let parsed = case (parse ans "" ln) of
+                 Left err -> []
+                 Right ans -> ans
+    in parsed
+{-
 parseAns ln =
     let trimmedLn = T.dropAround (\ c -> isSpace c || isPunctuation c) (T.pack ln)
         splitLn = splitOn "," (T.unpack trimmedLn)
@@ -96,7 +115,7 @@ parseAns ln =
         answers = intercalate "," (tail splitLn)
     in
     answers
-
+-}
 countMatch :: [Char] -> [Char] -> Int
 countMatch xs [] = 0
 countMatch [] ys = 0
@@ -178,7 +197,6 @@ print_file ll =
 
 sort_by_student :: [String] -> IO ()
 sort_by_student ll =
-    -- let answerKey = snd (parseLine (head ll))
     let answerKey = parseAns (head ll)
         parseAndMatch = parseAndCount answerKey
         finalSortedList = sortByStudent (map parseAndMatch (tail ll))
@@ -187,7 +205,6 @@ sort_by_student ll =
 
 sort_by_marks :: [String] -> IO ()
 sort_by_marks ll =
-    -- let answerKey = snd (parseLine (head ll))
     let answerKey = parseAns (head ll)
         parseAndMatch = parseAndCount answerKey
         finalSortedList = sortByMarks (map parseAndMatch (tail ll))
@@ -196,7 +213,6 @@ sort_by_marks ll =
 
 print_statistics :: [String] -> IO ()
 print_statistics ll =
-    -- let answerKey = snd (parseLine (head ll))
     let answerKey = parseAns (head ll)
         parseAndMatch = parseAndCount answerKey
         finalSortedList = sortByMarks (map parseAndMatch (tail ll))
