@@ -43,8 +43,11 @@ as follows:
     use higher-order functions (from the Haskell libraries), where possible.
 -}
 
+import Data.Char
 import Data.Function
 import Data.List
+import Data.List.Split
+import qualified Data.Text as T
 import Text.Parsec
 import Text.ParserCombinators.Parsec.Language (haskellDef)
 import qualified Text.ParserCombinators.Parsec.Token as P
@@ -65,16 +68,23 @@ line = do
         skipMany (char ',')
         skipMany digit
         skipMany (char ',')
-        answers <- comma upper
+        answers <- comma (upper <|> char '*' <|> char ',')
         skipMany (char ',')
         return (joinStuAns matricNumber answers, answers)
 
 parseLine :: String -> (String, [Char])
+{-
 parseLine ln =
     let parsed = case (parse line "" ln) of
                  Left err -> (show err, [])
                  Right (s, cs) -> (show s, cs)
     in parsed
+-}
+parseLine ln =
+    let trimmedLn = T.dropAround (\ c -> isSpace c || isPunctuation c) (T.pack ln)
+        splitLn = splitOn "," (T.unpack trimmedLn)
+    in
+    (head splitLn, intercalate "," (tail splitLn))
 
 countMatch :: [Char] -> [Char] -> Int
 countMatch xs [] = 0
