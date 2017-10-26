@@ -123,6 +123,12 @@ sortByMarks xs = sortBy (flip compare `on` snd) xs
 joinPair :: (String, Int) -> String
 joinPair p = (fst p) ++ " " ++ show (snd p)
 
+getMedian :: [Int] -> Int -> Float
+getMedian xs n = error "To be implemented"
+    -- if n is odd then just return xs !! ((n-1)/2)
+    -- otherwise set (n-1)/2 as i and then return ((xs !! i) + (xs !! (i+1)) / 2)
+    -- Set value to Float beforehand
+
 main = do
         -- x <- getLine
         ll <- read_file "cs2104.csv"
@@ -184,5 +190,15 @@ sort_by_marks ll =
 
 print_statistics :: [String] -> IO ()
 print_statistics ll =
-    foldr (\ a m -> putStrLn a >> m) (return ()) ll
+    -- let answerKey = snd (parseLine (head ll))
+    let answerKey = parseAns (head ll)
+        parseAndMatch = parseAndCount answerKey
+        finalSortedList = sortByMarks (map parseAndMatch (tail ll))
+        numStudents = length finalSortedList
+        minMark = tail (last finalSortedList)
+        maxMark = tail (head finalSortedList)
+        medMark = getMedian finalSortedList numStudents
+        avgMark = sum finalSortedList / numStudents
+    in
+    putStrLn "Min:" ++ minMark ++ ",Max:" ++ maxMark ++ ",Median:" ++ medMark ++ ",Average:" ++ avgMark
 
