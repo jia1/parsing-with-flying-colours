@@ -43,13 +43,61 @@ as follows:
     use higher-order functions (from the Haskell libraries), where possible.
 -}
 
-module SParsec where
-
 import Data.Function
 import Data.List
 import Text.Parsec
-import Text.ParserCombinators.Parsec.Language
-import qualified Text.ParserCombinators.Parsec.Token as Token
+import Text.ParserCombinators.Parsec.Language (haskellDef)
+import qualified Text.ParserCombinators.Parsec.Token as P
+
+type SParsec = Parsec String ()
+
+lexer  = P.makeTokenParser haskellDef
+comma  = P.commaSep lexer
+lexeme = P.lexeme   lexer
+
+joinStuAns :: String -> [Char] -> String
+joinStuAns stu ans = stu ++ " " ++ show ans
+
+line :: SParsec (String, [Char])
+line = do
+        spaces
+        matricNumber <- many alphaNum
+        skipMany (char ',')
+        skipMany digit
+        skipMany (char ',')
+        answers <- comma upper
+        skipMany (char ',')
+        return (joinStuAns matricNumber answers, answers)
+
+parseLine :: String -> (String, [Char])
+parseLine ln =
+    let parsed = case (parse line "" ln) of
+                 Left err -> (show err, [])
+                 Right (s, cs) -> (show s, cs)
+    in parsed
+
+countMatch :: [Char] -> [Char] -> Int
+countMatch xs [] = 0
+countMatch [] ys = 0
+countMatch xs ys =
+    if (head xs == head ys)
+    then 1 + countMatch (tail xs) (tail ys)
+    else countMatch (tail xs) (tail ys)
+
+parseAndCount :: String -> [Char] -> (String, Int)
+parseAndCount answerKey ln =
+    let pair = parseLine ln
+    in
+    (fst pair, countMatch (snd pair) answerKey)
+
+sortByStudent :: [(String, Int)] -> [(String, Int)]
+sortByStudent xs = sortBy (compare `on` fst)  xs
+
+sortByMarks :: [(String, Int)] -> [(String, Int)]
+sortByMarks xs = sortBy (flip compare `on` snd) xs
+
+joinPair :: (String, Int) -> String
+joinPair p = (fst p) ++ " " ++ show (snd p)
 
 main = do
         -- x <- getLine
@@ -94,92 +142,23 @@ print_file ll =
 
 sort_by_student :: [String] -> IO ()
 sort_by_student ll =
-    let answerKey = parseAnswers (head ll)
+    let answerKey = snd (parseLine (head ll))
         in
-        let parseCountMatchAns = parseCountMatch answerKey
-            finalSortedList = sortByStudent (map parseCountMatchAns (tail ll))
+        let parseAndMatch = parseAndCount answerKey
+            finalSortedList = sortByStudent (map parseAndMatch (tail ll))
     in
     foldr (\ a m -> putStrLn a >> m) (return ()) (map joinPair finalSortedList)
 
 sort_by_marks :: [String] -> IO ()
 sort_by_marks ll =
-    foldr (\ a m -> putStrLn a >> m) (return ()) ll
+    let answerKey = snd (parseLine (head ll))
+        in
+        let parseAndMatch = parseAndCount answerKey
+            finalSortedList = sortByMarks (map parseAndMatch (tail ll))
+    in
+    foldr (\ a m -> putStrLn a >> m) (return ()) (map joinPair finalSortedList)
 
 print_statistics :: [String] -> IO ()
 print_statistics ll =
     foldr (\ a m -> putStrLn a >> m) (return ()) ll
-
-type SParsec = Parsec String ()
-
-student :: SParsec String
-student = lexeme $ do
-        a <- char 'A'
-        number <- many digit
-        checksum <- upper
-        skip (many anyChar)
-        return . [a:(String $ number:checksum)]
-
-answers :: SParsec [Char]
-answers = lexeme $ do
-        a <- char 'A'
-        b <- many digits
-        c <- upper
-        d <- many (noneOf "ABCDE")
-        answerList <- chainl (oneOf "ABCDE") joinOp
-        return answerList
-
--- answers = Token.commaSep upper
-
-joinOp :: SParsec (Char -> Char -> [Char])
-joinOp = do
-        char ','
-        return eJoin
-
-eJoin x y = case x of
-            char x -> case y of
-                      char y -> [x:[y]]
-                      y -> [x:y]
-            x -> case y of
-                 char y -> [x:y]
-                 y -> x ++ y
-
-parseLine :: String -> (String, [Char])
-parseLine line =
-    let s = case (parse student "" a) of
-            Left err -> show err
-            Right stu -> show stu
-        a = case (parse answers "" a) of
-            Left err -> show err
-            Right ans -> show ans
-    in
-    (s, a)
-
-countMatch :: [Char] -> [Char] -> Int
-countMatch xs [] = 0
-countMatch [] ys = 0
-countMatch xs ys =
-    if (head xs == head ys)
-    then 1 + countMatch (tail xs) (tail ys)
-    else countMatch (tail xs) (tail ys)
-
-parseCountMatch :: String -> [Char] -> (String, Int)
-parseCountMatch answerKey a =
-    let pair = parseLine a
-    in
-    (fst pair, countMatch (snd pair) answerKey)
-
-parseAnswers :: String -> [Char]
-parseAnswers a =
-    case (parse answers "" a) of
-    Left err -> show err
-    Right ans -> show ans
-
-sortByStudent :: [(String, Int)] -> [(String, Int)]
-sortByStudent xs = sortBy (compare `on` fst)  xs
-
-sortByScore :: [(String, Int)] -> [(String, Int)]
-sortByScore xs = sortBy (flip compare `on` snd) xs
-
-joinPair :: (String, Int) -> String
-joinPair p = (fst p) ++ "," ++ show (snd p)
 
