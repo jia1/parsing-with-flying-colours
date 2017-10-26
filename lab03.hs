@@ -83,15 +83,29 @@ parseLine ln =
 parseLine ln =
     let trimmedLn = T.dropAround (\ c -> isSpace c || isPunctuation c) (T.pack ln)
         splitLn = splitOn "," (T.unpack trimmedLn)
+        student = head splitLn
+        answers = intercalate "," (tail (tail splitLn))
     in
-    (head splitLn, intercalate "," (tail splitLn))
+    (joinStuAns student answers, answers)
+
+parseAns :: String -> [Char]
+parseAns ln =
+    let trimmedLn = T.dropAround (\ c -> isSpace c || isPunctuation c) (T.pack ln)
+        splitLn = splitOn "," (T.unpack trimmedLn)
+        student = head splitLn
+        answers = intercalate "," (tail splitLn)
+    in
+    answers
 
 countMatch :: [Char] -> [Char] -> Int
 countMatch xs [] = 0
 countMatch [] ys = 0
 countMatch xs ys =
-    if (head xs == head ys)
-    then 1 + countMatch (tail xs) (tail ys)
+    let c = head xs
+        d = head ys
+    in
+    if (not (isPunctuation c) && not (isPunctuation d) && head xs == head ys)
+    then 2 + countMatch (tail xs) (tail ys)
     else countMatch (tail xs) (tail ys)
 
 parseAndCount :: String -> [Char] -> (String, Int)
@@ -152,19 +166,19 @@ print_file ll =
 
 sort_by_student :: [String] -> IO ()
 sort_by_student ll =
-    let answerKey = snd (parseLine (head ll))
-        in
-        let parseAndMatch = parseAndCount answerKey
-            finalSortedList = sortByStudent (map parseAndMatch (tail ll))
+    -- let answerKey = snd (parseLine (head ll))
+    let answerKey = parseAns (head ll)
+        parseAndMatch = parseAndCount answerKey
+        finalSortedList = sortByStudent (map parseAndMatch (tail ll))
     in
     foldr (\ a m -> putStrLn a >> m) (return ()) (map joinPair finalSortedList)
 
 sort_by_marks :: [String] -> IO ()
 sort_by_marks ll =
-    let answerKey = snd (parseLine (head ll))
-        in
-        let parseAndMatch = parseAndCount answerKey
-            finalSortedList = sortByMarks (map parseAndMatch (tail ll))
+    -- let answerKey = snd (parseLine (head ll))
+    let answerKey = parseAns (head ll)
+        parseAndMatch = parseAndCount answerKey
+        finalSortedList = sortByMarks (map parseAndMatch (tail ll))
     in
     foldr (\ a m -> putStrLn a >> m) (return ()) (map joinPair finalSortedList)
 
