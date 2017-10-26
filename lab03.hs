@@ -59,7 +59,7 @@ comma  = P.commaSep lexer
 lexeme = P.lexeme   lexer
 
 joinStuAns :: String -> [Char] -> String
-joinStuAns stu ans = stu ++ " " ++ show ans
+joinStuAns stu ans = stu ++ " " ++ ans
 
 line :: SParsec (String, [Char])
 line = do
@@ -121,13 +121,19 @@ sortByMarks :: [(String, Int)] -> [(String, Int)]
 sortByMarks xs = sortBy (flip compare `on` snd) xs
 
 joinPair :: (String, Int) -> String
-joinPair p = (fst p) ++ " " ++ show (snd p)
+joinPair p = (fst p) ++ " " ++ show (toInteger (snd p))
 
-getMedian :: [Int] -> Int -> Float
-getMedian xs n = error "To be implemented"
-    -- if n is odd then just return xs !! ((n-1)/2)
-    -- otherwise set (n-1)/2 as i and then return ((xs !! i) + (xs !! (i+1)) / 2)
-    -- Set value to Float beforehand
+getMedian :: [Int] -> Int -> String
+getMedian xs n =
+    if odd n
+    then
+        let i = round (fromIntegral (n-1) / fromIntegral 2)
+        in
+        show (xs !! i)
+    else
+        let i = round (fromIntegral (n-1) / fromIntegral 2)
+        in
+        show (fromIntegral ((xs !! i) + (xs !! (i+1))) / fromIntegral 2)
 
 main = do
         -- x <- getLine
@@ -194,11 +200,12 @@ print_statistics ll =
     let answerKey = parseAns (head ll)
         parseAndMatch = parseAndCount answerKey
         finalSortedList = sortByMarks (map parseAndMatch (tail ll))
-        numStudents = length finalSortedList
-        minMark = tail (last finalSortedList)
-        maxMark = tail (head finalSortedList)
-        medMark = getMedian finalSortedList numStudents
-        avgMark = sum finalSortedList / numStudents
+        marksSortedList = map (\ p -> snd p) finalSortedList
+        numStudents = length marksSortedList
+        minMark = show (last marksSortedList)
+        maxMark = show (head marksSortedList)
+        medMark = getMedian marksSortedList numStudents -- String
+        avgMark = show (fromIntegral (sum marksSortedList) / fromIntegral numStudents)
     in
-    putStrLn "Min:" ++ minMark ++ ",Max:" ++ maxMark ++ ",Median:" ++ medMark ++ ",Average:" ++ avgMark
+    putStrLn ("Min:" ++ minMark ++ ",Max:" ++ maxMark ++ ",Median:" ++ medMark ++ ",Average:" ++ avgMark)
 
