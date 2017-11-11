@@ -10,7 +10,6 @@ import qualified Text.ParserCombinators.Parsec.Token    as Token
 --
 -- Parser section
 --
-
 data Term
   = Var String
   | Fun String Term
@@ -54,7 +53,7 @@ function = do
   e <- expr
   return $ Fun v e
 
--- code below needs to be considerably generalized..
+-- Code below needs to be considerably generalized
 expr :: Parser Term
 expr = function <|> var
 
@@ -69,7 +68,10 @@ parseAll p =
       return r
 
 parseLambda :: String -> Maybe Term
-parseLambda = error "TBI(parseLambda)"
+parseLambda s
+  = case of (parseAll s)
+    Right parsed -> Just parsed
+    Left _ -> Nothing
 
 
 --
