@@ -63,9 +63,12 @@ parseAll p =
   where
     allOf p = do
       Token.whiteSpace lexer
-      r <- p
+      reservedOp "\\"
+      v <- p `sepBy1` space
+      reservedOp "."
+      e <- expr
       eof
-      return r
+      return $ Fun v e
 
 parseLambda :: String -> Maybe Term
 parseLambda s
@@ -110,11 +113,16 @@ freshNameGenerator = do
   put (i + 1)
   return $ "_var" ++ show i
 
--- one may use a state monad from  Control.Monad.State, as below:
+-- one may use a state monad from Control.Monad.State, as below:
 -- evalByName t = evalState (eval t) 0
 
 betaReduce :: Term -> Term
-betaReduce t = error "TBI(betaReduce)"
+betaReduce t
+  = let pair = runState (eval t) t
+        reducedState = snd pair
+        answer = if (reducedState == t) then fst pair else betaReduce reducedState
+    in
+    answer
 
 etaReduce :: Term -> Term
 etaReduce t@(Fun x (FApp f (Var y))) = if x == y && x `notElem` freeVars f then f else t
