@@ -3,6 +3,7 @@ module Lab04 where
 import           Control.Monad.State
 import           Data.List                              as List
 import           Text.Parsec                            hiding (State)
+import           Text.Parsec.Prim
 import           Text.Parsec.String                     (Parser)
 import           Text.ParserCombinators.Parsec.Language (emptyDef)
 import qualified Text.ParserCombinators.Parsec.Token    as Token
@@ -51,11 +52,17 @@ function = do
   v <- ident
   reservedOp "."
   e <- expr
-  return $ Fun v e
+  return (Fun v e)
 
 -- Code below needs to be considerably generalized
+term :: Parser Term
+term = var <|> function <|> Let term <|> (parens term)
+
 expr :: Parser Term
-expr = function <|> var
+expr = parsecMap (\xs -> foldl1 (\e1 e2 -> FApp e1 e2) xs) (many1 term)
+-- (\xs -> foldl12) ? TODO: Fix this
+
+-- parsecMap :: (a -> b) -> Parser a -> Parser b
 
 parseAll :: Parser a -> String -> Either ParseError a
 parseAll p =

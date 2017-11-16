@@ -49,14 +49,9 @@ import Data.List
 import Data.List.Split
 import qualified Data.Text as T
 import Text.Parsec
-import Text.ParserCombinators.Parsec.Language (haskellDef)
 import qualified Text.ParserCombinators.Parsec.Token as P
 
 type SParsec = Parsec String ()
-
-lexer  = P.makeTokenParser haskellDef
-comma  = P.commaSep lexer
-lexeme = P.lexeme   lexer
 
 trim :: String -> String
 trim ln =
