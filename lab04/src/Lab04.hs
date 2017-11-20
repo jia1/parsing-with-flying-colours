@@ -44,14 +44,27 @@ ident = Token.identifier lexer
 var :: Parser Term
 var = Var <$> ident
 
+letin :: Parser Term
+letin = do
+  reserved "let"
+  spaces
+  v <- ident
+  spaces
+  reservedOp "="
+  spaces
+  e1 <- expr
+  reserved "in"
+  spaces
+  e2 <- expr
+  return $ FApp e1 e2
+
 expr :: Parser Term
-expr = chainl1 (parens expr <|> function <|> var) $ return FApp
+expr = chainl1 (parens expr <|> function <|> letin <|> var) $ return FApp
 
 function :: Parser Term
 function = do
-  Token.whiteSpace lexer
   reservedOp "\\"
-  v <- many1 ident
+  v <- many ident
   reservedOp "."
   e <- expr
   return $ abstract v e
@@ -62,7 +75,13 @@ abstract vs body =
   v:xs -> Fun v (abstract xs body)
 
 parseAll :: Parser Term -> String -> Either ParseError Term
-parseAll p s = parse p "" s
+parseAll p s =
+  parse (allOf p) "" s
+  where
+    allOf p = do
+      Token.whiteSpace lexer
+      e <- expr
+      return e
 
 parseLambda :: String -> Maybe Term
 parseLambda s
