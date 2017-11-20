@@ -2,8 +2,8 @@ module Lab04 where
 
 import           Control.Monad.State
 import           Data.List                              as List
+import qualified Language.Haskell.Interpreter
 import           Text.Parsec                            hiding (State)
-import           Text.Parsec.Prim
 import           Text.Parsec.String                     (Parser)
 import           Text.ParserCombinators.Parsec.Language (emptyDef)
 import qualified Text.ParserCombinators.Parsec.Token    as Token
@@ -44,42 +44,29 @@ ident = Token.identifier lexer
 var :: Parser Term
 var = Var <$> ident
 
--- An example of a parser for lambdas with a single argument
--- You need to generalise it to lambdas with multiple arguments
+expr :: Parser Term
+expr = chainl1 (parens expr <|> function <|> var) $ return FApp
+
 function :: Parser Term
 function = do
+  Token.whiteSpace lexer
   reservedOp "\\"
-  v <- ident
+  v <- many1 ident
   reservedOp "."
   e <- expr
-  return (Fun v e)
+  return $ abstract v e
 
--- Code below needs to be considerably generalized
-term :: Parser Term
-term = var <|> function <|> Let term <|> (parens term)
+abstract vs body =
+  case vs of
+  v:[] -> Fun v body
+  v:xs -> Fun v (abstract xs body)
 
-expr :: Parser Term
-expr = parsecMap (\xs -> foldl1 (\e1 e2 -> FApp e1 e2) xs) (many1 term)
--- (\xs -> foldl12) ? TODO: Fix this
-
--- parsecMap :: (a -> b) -> Parser a -> Parser b
-
-parseAll :: Parser a -> String -> Either ParseError a
-parseAll p =
-  parse (allOf p) ""
-  where
-    allOf p = do
-      Token.whiteSpace lexer
-      reservedOp "\\"
-      v <- p `sepBy1` space
-      reservedOp "."
-      e <- expr
-      eof
-      return $ Fun v e
+parseAll :: Parser Term -> String -> Either ParseError Term
+parseAll p s = parse p "" s
 
 parseLambda :: String -> Maybe Term
 parseLambda s
-  = case of (parseAll s)
+  = case (parseAll function s) of
     Right parsed -> Just parsed
     Left _ -> Nothing
 
@@ -125,11 +112,14 @@ freshNameGenerator = do
 
 betaReduce :: Term -> Term
 betaReduce t
-  = let pair = runState (eval t) t
+  = error "TBI"
+    {-
+    let pair = runState (eval (show t)) t
         reducedState = snd pair
         answer = if (reducedState == t) then fst pair else betaReduce reducedState
     in
     answer
+    -}
 
 etaReduce :: Term -> Term
 etaReduce t@(Fun x (FApp f (Var y))) = if x == y && x `notElem` freeVars f then f else t
