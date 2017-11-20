@@ -56,7 +56,7 @@ letin = do
   reserved "in"
   spaces
   e2 <- expr
-  return $ FApp e1 e2
+  return $ Let v e1 e2
 
 expr :: Parser Term
 expr = chainl1 (parens expr <|> function <|> letin <|> var) $ return FApp
